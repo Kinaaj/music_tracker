@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Tracker</title>
+    <style>
+        /* --- TVŮJ PŮVODNÍ CSS STYL --- */
+        
+        /* Nastavení barev a proměnných */
+        :root {
+            --bg-color: #232136; /* Hluboká tmavá fialová/šedá */
+            --card-bg: #2a273f; /* O něco světlejší pozadí karet */
+            --text-main: #e0def4; /* Jemná bílá */
+
+            /* Pastelová paleta (Rose Pine inspirovaná) */
+            --color-general: #eb6f92; /* Pastelová růžová/červená */
+            --color-school: #c4a7e7; /* Pastelová fialová */
+            --color-other: #9ccfd8; /* Pastelová tyrkysová/zelená */
+            --color-music: #f6c177; /* Pastelová zlatá/oranžová */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            display: grid;
+            /* Responzivní grid */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+        }
+
+        .category {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Nadpisy kategorií */
+        h2 {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid;
+            opacity: 0.9;
+        }
+
+        /* --- STYLY PRO KATEGORIE (Původní) --- */
+        /* Nástroje (Music) */
+        .category.music h2 {
+            color: var(--color-music);
+            border-color: var(--color-music);
+        }
+
+        /* --- NOVÉ PRVKY PRO APLIKACI (Přizpůsobené tvému stylu) --- */
+
+        /* Tlačítko (vypadá jako tvůj odkaz, ale je to button) */
+        button.app-btn {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            text-align: left;
+            border: none;
+            cursor: pointer;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+            width: 100%; /* Aby bylo přes celou šířku sloupce */
+            
+            /* Specifické pro Music sekci */
+            border-left-color: var(--color-music); 
+        }
+
+        button.app-btn:hover {
+            transform: translateX(8px);
+            filter: brightness(1.2);
+            background-color: #f6c17720; /* Music tint */
+        }
+        
+        button.app-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.app-btn::before {
+            content: "> "; /* Jiný znak pro akci */
+            color: var(--color-music);
+            opacity: 0.6;
+        }
+
+        /* Seznam výsledků */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Položka seznamu (vypadá jako neklikatelná karta) */
+        li.result-item {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 400;
+            border-left: 4px solid var(--color-music); /* Vždy barevné */
+            opacity: 0.9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        li.result-item small {
+            opacity: 0.5;
+            font-size: 0.8em;
+        }
+
+        /* Chybová hláška */
+        li.error {
+            border-left-color: var(--color-general); /* Červená/Růžová pro chybu */
+            background-color: #eb6f9220;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="category music">
+            <h2>Akce</h2>
+            <button id="btnNacist" class="app-btn">Načíst Piano Cvičení</button>
+        </div>
+
+        <div class="category music">
+            <h2>Seznam Cvičení</h2>
+            <ul id="seznam">
+                <li class="result-item" style="border-left-color: #444; opacity: 0.5;">
+                    Zatím nic nenačteno...
+                </li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyJwdvaMaozpmQIPcvofNInyzgbhLHiYZKSUpHkCViAEG-9CwNlrsM1SN858C50J0E9cA/exec";
+
+        document.getElementById("btnNacist").addEventListener("click", function() {
+            nactiPiano();
+        });
+
+        function nactiPiano() {
+            const seznam = document.getElementById('seznam');
+            const tlacitko = document.getElementById('btnNacist');
+            
+            // UI změny při načítání
+            tlacitko.innerHTML = "Načítám data...";
+            tlacitko.disabled = true;
+            
+            // Vložíme dočasnou položku
+            seznam.innerHTML = `
+                <li class="result-item" style="border-left-color: var(--color-other);">
+                    ⏳ Komunikuji s databází...
+                </li>`;
+
+            // Volání API
+            fetch(API_URL + "?akce=seznam&nastroj=Piano")
+            .then(response => response.json())
+            .then(json => {
+                seznam.innerHTML = ""; // Vymazat loader
+
+                if (json.status === "success") {
+                    if (json.data.length === 0) {
+                        seznam.innerHTML = `
+                            <li class="result-item">
+                                ⚠️ Žádná cvičení pro Piano nenalezena.
+                            </li>`;
+                    } else {
+                        // Výpis dat
+                        json.data.forEach(cviceni => {
+                            let polozka = document.createElement("li");
+                            polozka.className = "result-item";
+                            
+                            // Vnitřek karty
+                            polozka.innerHTML = `
+                                <span>${cviceni.nazev}</span>
+                                <small>ID: ${cviceni.id}</small>
+                            `;
+                            seznam.appendChild(polozka);
+                        });
+                    }
+                } else {
+                    seznam.innerHTML = `
+                        <li class="result-item error">
+                            Chyba ve skriptu: ${json.message}
+                        </li>`;
+                }
+            })
+            .catch(error => {
+                console.error("Chyba:", error);
+                seznam.innerHTML = `
+                    <li class="result-item error">
+                        Chyba připojení: ${error.message}
+                    </li>`;
+            })
+            .finally(() => {
+                // Reset tlačítka
+                tlacitko.innerHTML = "Načíst Piano Cvičení";
+                tlacitko.disabled = false;
+            });
+        }
+    </script>
+
+</body>
+</html>
